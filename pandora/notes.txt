@@ -1,0 +1,13 @@
+iso.3.6.1.2.1.1.1.0 = STRING: "Linux pandora 5.4.0-91-generic #102-Ubuntu SMP Fri Nov 5 16:31:28 UTC 2021 x86_64"
+iso.3.6.1.2.1.1.2.0 = OID: iso.3.6.1.4.1.8072.3.2.10
+iso.3.6.1.2.1.1.3.0 = Timeticks: (878783) 2:26:27.83
+iso.3.6.1.2.1.1.4.0 = STRING: "Daniel"
+iso.3.6.1.2.1.1.5.0 = STRING: "pandora"
+iso.3.6.1.2.1.1.6.0 = STRING: "Mississippi"
+iso.3.6.1.2.1.1.7.0 = INTEGER: 72
+
+
+
+user: daniel
+pass: HotelBabylon23
+

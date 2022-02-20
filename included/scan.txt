@@ -1,0 +1,22 @@
+# Nmap 7.92 scan initiated Tue Dec 28 16:34:39 2021 as: nmap -sU -Pn -n -T4 -oN scan.txt 10.129.82.69
+Warning: 10.129.82.69 giving up on port because retransmission cap hit (6).
+Nmap scan report for 10.129.82.69
+Host is up (0.17s latency).
+Not shown: 986 closed udp ports (port-unreach)
+PORT      STATE         SERVICE
+42/udp    open|filtered nameserver
+68/udp    open|filtered dhcpc
+69/udp    open|filtered tftp
+17754/udp open|filtered zep
+18360/udp open|filtered unknown
+19718/udp open|filtered unknown
+21354/udp open|filtered unknown
+21576/udp open|filtered unknown
+21621/udp open|filtered unknown
+21948/udp open|filtered unknown
+23781/udp open|filtered unknown
+24910/udp open|filtered unknown
+28369/udp open|filtered unknown
+30975/udp open|filtered unknown
+
+# Nmap done at Tue Dec 28 16:52:33 2021 -- 1 IP address (1 host up) scanned in 1074.00 seconds

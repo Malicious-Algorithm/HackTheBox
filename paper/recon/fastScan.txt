@@ -1,0 +1,15 @@
+# Nmap 7.92 scan initiated Sat Feb 12 21:28:49 2022 as: nmap --min-rate 5000 -p- -vv -oN fastScan.txt 10.10.11.143
+Increasing send delay for 10.10.11.143 from 0 to 5 due to 2753 out of 9175 dropped probes since last increase.
+Increasing send delay for 10.10.11.143 from 5 to 10 due to 1541 out of 5136 dropped probes since last increase.
+Increasing send delay for 10.10.11.143 from 10 to 20 due to 2044 out of 6812 dropped probes since last increase.
+Nmap scan report for 10.10.11.143
+Host is up, received echo-reply ttl 63 (0.38s latency).
+Scanned at 2022-02-12 21:28:50 UTC for 380s
+Not shown: 38062 closed tcp ports (reset), 27470 filtered tcp ports (no-response)
+PORT    STATE SERVICE REASON
+22/tcp  open  ssh     syn-ack ttl 63
+80/tcp  open  http    syn-ack ttl 63
+443/tcp open  https   syn-ack ttl 63
+
+Read data files from: /usr/bin/../share/nmap
+# Nmap done at Sat Feb 12 21:35:10 2022 -- 1 IP address (1 host up) scanned in 380.64 seconds

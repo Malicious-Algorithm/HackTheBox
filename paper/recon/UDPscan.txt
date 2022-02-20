@@ -1,0 +1,12 @@
+# Nmap 7.92 scan initiated Sat Feb 12 21:55:05 2022 as: nmap -sU -sV -oN /home/user/Desktop/S4mSepi00l/HTB/paper/recon/UDPscan.txt -vv 10.10.11.143
+Increasing send delay for 10.10.11.143 from 400 to 800 due to 11 out of 11 dropped probes since last increase.
+Nmap scan report for 10.10.11.143
+Host is up, received echo-reply ttl 63 (0.17s latency).
+Scanned at 2022-02-12 21:55:06 UTC for 1188s
+Not shown: 999 closed udp ports (port-unreach)
+PORT     STATE         SERVICE  REASON      VERSION
+5353/udp open|filtered zeroconf no-response
+
+Read data files from: /usr/bin/../share/nmap
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Sat Feb 12 22:14:54 2022 -- 1 IP address (1 host up) scanned in 1188.40 seconds

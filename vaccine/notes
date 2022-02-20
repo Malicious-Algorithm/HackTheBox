@@ -1,0 +1,13 @@
+how to crack the .zip file if it's protected by password
+	sudo zip2john <file.zip> > hash.txt
+
+	(cd to the rockyou.txt path (idk why but trust me))
+	sudo john --wordlist=rockyou.txt <path to the hash.txt file> 
+
+
+username: admin
+password: qwerty789
+
+
+user flag = ec9b13ca4d6229cd5cc1e09980965bf7
+root flag = dd6e058e814260bc70e9bbdef2715849

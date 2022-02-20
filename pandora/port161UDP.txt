@@ -1,0 +1,8 @@
+# Nmap 7.92 scan initiated Sun Jan 30 02:33:17 2022 as: nmap -sU -p 161 -oN /home/user/Desktop/S4mSepi00l/HTB/pandora/port161UDP.txt 10.10.11.136
+Nmap scan report for panda.htb (10.10.11.136)
+Host is up (0.17s latency).
+
+PORT    STATE SERVICE
+161/udp open  snmp
+
+# Nmap done at Sun Jan 30 02:33:17 2022 -- 1 IP address (1 host up) scanned in 0.52 seconds

@@ -1,0 +1,12 @@
+Target: http://horizontall.htb/
+Total requests: 114441
+==================================================================
+ID    Response   Lines      Word         Chars          Request    
+==================================================================
+00001:  C=200      1 L	      43 W	    901 Ch	  "www"
+47093:  C=200     19 L	      33 W	    413 Ch	  "api-prod"
+
+Total time: 0
+Processed Requests: 87313
+Filtered Requests: 87311
+Requests/sec.: 0

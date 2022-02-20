@@ -1,0 +1,51 @@
+DirBuster 1.0-RC1 - Report
+http://www.owasp.org/index.php/Category:OWASP_DirBuster_Project
+Report produced on Fri Dec 31 00:52:04 UTC 2021
+--------------------------------
+
+http://10.10.11.104:80
+--------------------------------
+Directories found during testing:
+
+Dirs found with a 302 response:
+
+/
+
+Dirs found with a 200 response:
+
+/js/
+/css/
+
+Dirs found with a 403 response:
+
+/icons/
+/icons/small/
+
+
+--------------------------------
+Files found during testing:
+
+Files found with a 302 responce:
+
+/index.php
+/download.php
+/accounts.php
+/files.php
+/status.php
+/file_logs.php
+/logout.php
+/logs.php
+
+Files found with a 200 responce:
+
+/login.php
+/js/uikit-icons.min.js
+/js/uikit.min.js
+/header.php
+/nav.php
+/footer.php
+/css/uikit.min.css
+/config.php
+
+
+--------------------------------
